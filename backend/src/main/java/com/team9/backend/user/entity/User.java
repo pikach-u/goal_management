@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -36,8 +38,12 @@ public class User implements UserDetails {
     private String password;
 
     private String bio;
+
+    @Enumerated(EnumType.STRING)
     private String provider;      // LOCAL, GOOGLE, GITHUB
+
     private String providerId;
+
     private Boolean enabled = true;
 
     private String role;          // USER, ADMIN
@@ -45,8 +51,13 @@ public class User implements UserDetails {
     private boolean goalVisibility;  // 친구공개 추가: bool -> enum
     private boolean progressVisibility;
 
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;    // 생성 시각
+
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;    // 수정 시각
 
 //    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
 //    private List<Goal> goals = new ArrayList<>();
