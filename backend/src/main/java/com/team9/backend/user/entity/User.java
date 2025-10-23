@@ -1,5 +1,6 @@
 package com.team9.backend.user.entity;
 
+import com.team9.backend.auth.entity.AuthProvider;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -40,11 +41,14 @@ public class User implements UserDetails {
     private String bio;
 
     @Enumerated(EnumType.STRING)
-    private String provider;      // LOCAL, GOOGLE, GITHUB
+    private AuthProvider provider;      // LOCAL, GOOGLE, GITHUB
 
     private String providerId;
 
-    private Boolean enabled = true;
+    private boolean enabled;
+
+    @PrePersist
+    protected void onCreate() { enabled = true; }   // 회원가입 시 자동으로 true
 
     private String role;          // USER, ADMIN
     private String motivationType;  // default: ??
