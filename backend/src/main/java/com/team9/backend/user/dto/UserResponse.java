@@ -30,7 +30,7 @@ public class UserResponse {
                 .userId(user.getUserId())
                 .username(user.getUsername())
                 .email(user.getEmail())
-                //.profileImageUrl(user.getProfileImageUrl())
+                .profileImageUrl(user.getProfileImageUrl())
                 .bio(user.getBio())
                 .build();
     }

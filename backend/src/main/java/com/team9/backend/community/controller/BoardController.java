@@ -29,15 +29,15 @@ public class BoardController {
     }
 
     //조회, 검색
-    @GetMapping
-    public Page<Post> getAllPosts(@RequestParam(name = "keyword", required = false) String keyword, Pageable pageable){
-
-        if(keyword != null && !keyword.trim().isEmpty()){
-            return boardService.searchPost(keyword,pageable);
-        }else{
-            return boardService.findAllPosts(pageable);
-        }
-    }
+//    @GetMapping
+//    public Page<Post> getAllPosts(@RequestParam(name = "keyword", required = false) String keyword, Pageable pageable){
+//
+//        if(keyword != null && !keyword.trim().isEmpty()){
+//            return boardService.searchPost(keyword,pageable);
+//        }else{
+//            return boardService.findAllPosts(pageable);
+//        }
+//    }
 
     //상세 조회
     @GetMapping("/{postNo}")

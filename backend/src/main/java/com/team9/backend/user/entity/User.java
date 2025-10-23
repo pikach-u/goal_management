@@ -1,6 +1,7 @@
 package com.team9.backend.user.entity;
 
 import com.team9.backend.auth.entity.AuthProvider;
+import com.team9.backend.community.entity.Post;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -70,8 +71,8 @@ public class User implements UserDetails {
 //    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
 //    private List<Goal> goals = new ArrayList<>();
 //
-//    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
-//    private List<Post> posts = new ArrayList<>();
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    private List<Post> posts = new ArrayList<>();
 
     // 기본 사용자 권한 부여
     @Override
