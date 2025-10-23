@@ -2,7 +2,7 @@ package com.team9.backend.reward.service;
 
 import com.team9.backend.reward.dto.BalanceResponse;
 import com.team9.backend.reward.dto.RewardHistoryItem;
-import com.team9.backend.reward.entity.PointBalance;
+import com.team9.backend.reward.entity.PointsBalance;
 import com.team9.backend.reward.entity.PointTransaction;
 import com.team9.backend.reward.entity.RewardEnums.TransactionType;
 import com.team9.backend.reward.repository.PointBalanceRepository;
@@ -31,8 +31,8 @@ public class PointsService {
         tx.setCreatedAt(LocalDateTime.now());
         txRepo.save(tx);
 
-        PointBalance bal = balanceRepo.findById(userId).orElseGet(() -> {
-            PointBalance b = new PointBalance(); b.setUserId(userId); return b;
+        PointsBalance bal = balanceRepo.findById(userId).orElseGet(() -> {
+            PointsBalance b = new PointsBalance(); b.setUserId(userId); return b;
         });
         if (amount >= 0) bal.setEarnedPoints(bal.getEarnedPoints() + amount);
         else bal.setUsedPoints(bal.getUsedPoints() + Math.abs(amount));
@@ -45,8 +45,8 @@ public class PointsService {
 
     @Transactional(readOnly = true)
     public BalanceResponse balance(Long userId) {
-        PointBalance b = balanceRepo.findById(userId).orElseGet(() -> {
-            PointBalance nb = new PointBalance(); nb.setUserId(userId); return nb;
+        PointsBalance b = balanceRepo.findById(userId).orElseGet(() -> {
+            PointsBalance nb = new PointsBalance(); nb.setUserId(userId); return nb;
         });
         return new BalanceResponse(b.getBalance(), b.getEarnedPoints(), b.getUsedPoints());
     }

@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "point_balance")
 @Getter @Setter @NoArgsConstructor
-public class PointBalance {
+public class PointsBalance {
 
     @Id
     private Long userId;              // User 엔티티의 PK와 동일 (식별 관계)
