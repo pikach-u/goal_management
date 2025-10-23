@@ -59,6 +59,10 @@ public class User implements UserDetails {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;    // 수정 시각
 
+    @Column(name = "profile_image_url", columnDefinition = "TEXT")
+    private String profileImageUrl;
+
+
 //    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
 //    private List<Goal> goals = new ArrayList<>();
 //

@@ -16,6 +16,8 @@ public class UserResponse {
     private String email;
     private String bio;
 
+    private String profileImageUrl;
+
     private String motivationType;
     private boolean goalVisibility;
     private boolean progressVisibility;
