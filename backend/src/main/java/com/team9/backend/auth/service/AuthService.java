@@ -17,6 +17,10 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -35,15 +39,26 @@ public class AuthService {
             throw new UserAlreadyExistsException("Email already exists");
         }
 
+        List<String> defaultProfileImages = Arrays.asList(
+                "resources/static/images/profile_1.jpg",
+                "resources/static/images/profile_2.jpg",
+                "resources/static/images/profile_3.jpg"
+        );
+
+        Collections.shuffle(defaultProfileImages);
+        String defaultProfileImage = defaultProfileImages.get(0);
+
         User user = User.builder()
                 .username(request.getUsername())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .provider(AuthProvider.LOCAL)
                 .role("ROLE_USER")
+                .profileImageUrl(defaultProfileImage)
                 .build();
         System.out.println(user.getEmail());
         user = userRepository.save(user);
+        System.out.println(user.getProfileImageUrl());
 
         String jwtToken = jwtService.generateToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);
