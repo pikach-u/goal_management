@@ -39,7 +39,7 @@ public class JwtService {
         // userDetails가 User Entity이면, User로 캐스팅해서 extraClaims에 넣는다
         // instanceof : Java 패턴 매칭
         if(userDetails instanceof User user){   // 사용자 정보를 토큰에 포함
-            extraClaims.put("id", user.getId());    // UUID → String 변환
+            extraClaims.put("id", user.getUserId());    // UUID → String 변환
             extraClaims.put("email", user.getEmail());
             extraClaims.put("username", user.getUsername());
 
@@ -81,7 +81,7 @@ public class JwtService {
         if(userDetails instanceof User user){
             // id 또는 username으로 매칭
             // Token에 들어있는 식별자와 일치하는지 확인
-            boolean isVaild = identifier.equals(String.valueOf(user.getId()))
+            boolean isVaild = identifier.equals(String.valueOf(user.getUserId()))
                     || identifier.equals(user.getUsername());
             return isVaild && !isTokenExpired(token);
         }
