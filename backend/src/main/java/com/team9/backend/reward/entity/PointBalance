@@ -1,0 +1,21 @@
+package com.pikachu.goal.reward.entity;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.time.LocalDateTime;
+
+@Entity @Table(name = "point_balance")
+@Getter @Setter @NoArgsConstructor
+public class PointBalance {
+    @Id
+    private Long userId;             // User PK 동일 (식별 관계)
+    private long balance;            // 현재 잔액
+    private long earnedPoints;       // 누적 적립
+    private long usedPoints;         // 누적 사용
+    private LocalDateTime lastUpdated = LocalDateTime.now();
+}
