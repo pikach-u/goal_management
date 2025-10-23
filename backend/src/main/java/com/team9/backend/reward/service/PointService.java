@@ -2,7 +2,7 @@ package com.pikachu.goal.reward.service;
 
 import com.pikachu.goal.reward.dto.BalanceResponse;
 import com.pikachu.goal.reward.dto.RewardHistoryItem;
-import com.pikachu.goal.reward.entity.PointBalance;
+import com.pikachu.goal.reward.entity.PointsBalance;
 import com.pikachu.goal.reward.entity.PointTransaction;
 import com.pikachu.goal.reward.entity.RewardEnums.TransactionType;
 import com.pikachu.goal.reward.repository.PointBalanceRepository;
