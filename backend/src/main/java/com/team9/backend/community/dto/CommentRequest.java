@@ -8,11 +8,8 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class PostRequest {
-
-    @NotBlank(message = "제목을 입력해주세요")
-    private String postTitle;
+public class CommentRequest {
 
     @NotBlank(message = "내용을 입력해주세요")
-    private String postContent;
+    private String content;
 }
