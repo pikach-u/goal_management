@@ -1,11 +1,11 @@
 package com.team9.backend.community.entity;
 
+import com.team9.backend.user.entity.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.apache.catalina.User;
 
 import java.time.LocalDateTime;
 
@@ -37,9 +37,9 @@ public class Post {
     @Column(name = "post_delete_date")
     private LocalDateTime postDeleteDate;
 
-    //@ManyToOne(fetch = FetchType.LAZY)
-    //@JoinColumn(name = "user_id")
-    //private User user;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
 
     //조회수
     public void incrementPostCount() {
