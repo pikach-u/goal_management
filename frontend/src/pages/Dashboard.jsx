@@ -1,18 +1,36 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Target, TrendingUp, Award, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import api from "../features/auth/services/api";
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("goals");
   const navigate = useNavigate();
 
   // Mock data - 나중에 API에서 가져올 데이터
-  const userData = {
-    username: "사용자",
-    totalGoals: 4,
-    completedGoals: 2,
-    points: 1240,
-  };
+  const [userData, setUserData] = useState({
+    username: "",
+    totalGoals: 0,
+    completedGoals: 0,
+    points: 0,
+  });
+
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const res = await api.get("/api/users/me");
+        setUserData({
+          username: res.data.username,
+          totalGoals: res.data.totalGoals || 0,
+          completedGoals: res.data.completedGoals || 0,
+          points: res.data.totalPoints || 0,
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    loadUserData();
+  }, []);
 
   const goals = [
     {
@@ -79,9 +97,24 @@ const Dashboard = () => {
   ];
 
   const recentActivities = [
-    { id: 1, type: "goal", message: "매일 운동하기 목표 1일 달성", time: "2시간 전" },
-    { id: 2, type: "badge", message: "연속 7일 달성 배지 획득", time: "1일 전" },
-    { id: 3, type: "goal", message: "React 마스터하기 목표 업데이트", time: "2일 전" },
+    {
+      id: 1,
+      type: "goal",
+      message: "매일 운동하기 목표 1일 달성",
+      time: "2시간 전",
+    },
+    {
+      id: 2,
+      type: "badge",
+      message: "연속 7일 달성 배지 획득",
+      time: "1일 전",
+    },
+    {
+      id: 3,
+      type: "goal",
+      message: "React 마스터하기 목표 업데이트",
+      time: "2일 전",
+    },
   ];
 
   const overallProgress = Math.round(
@@ -105,15 +138,16 @@ const Dashboard = () => {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               안녕하세요, {userData.username}님! 👋
             </h1>
-            <p className="text-gray-600">오늘도 목표를 향해 한 걸음 나아가세요</p>
+            <p className="text-gray-600">
+              오늘도 목표를 향해 한 걸음 나아가세요
+            </p>
           </div>
           <div className="flex gap-3">
             <button
               onClick={() => navigate("/goals/new")}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2"
             >
-              <Target className="w-4 h-4" />
-              새 목표
+              <Target className="w-4 h-4" />새 목표
             </button>
             <button
               onClick={handleLogout}
@@ -159,7 +193,9 @@ const Dashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 mb-1">획득 포인트</p>
-                <p className="text-3xl font-bold text-gray-900">{userData.points}</p>
+                <p className="text-3xl font-bold text-gray-900">
+                  {userData.points}
+                </p>
               </div>
               <div className="bg-yellow-100 p-3 rounded-lg">
                 <Award className="w-8 h-8 text-yellow-600" />
@@ -221,7 +257,9 @@ const Dashboard = () => {
                       style={{ width: `${overallProgress}%` }}
                     ></div>
                   </div>
-                  <p className="text-sm text-gray-600">{overallProgress}% 완료</p>
+                  <p className="text-sm text-gray-600">
+                    {overallProgress}% 완료
+                  </p>
                 </div>
 
                 {/* Goals List */}
@@ -237,8 +275,12 @@ const Dashboard = () => {
                         className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition"
                       >
                         <div className="flex justify-between items-start mb-2">
-                          <h3 className="font-semibold text-gray-900">{goal.title}</h3>
-                          <span className="text-sm text-gray-500">{goal.period}</span>
+                          <h3 className="font-semibold text-gray-900">
+                            {goal.title}
+                          </h3>
+                          <span className="text-sm text-gray-500">
+                            {goal.period}
+                          </span>
                         </div>
                         <div className="mb-2">
                           <div className="bg-gray-200 rounded-full h-2 overflow-hidden">
@@ -275,7 +317,9 @@ const Dashboard = () => {
             {activeTab === "posts" && (
               <div className="animate-fade-in bg-white rounded-xl shadow-sm p-6">
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-semibold text-gray-900">내 작성글</h2>
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    내 작성글
+                  </h2>
                   <button
                     onClick={() => navigate("/community")}
                     className="text-gray-600 hover:text-gray-900 hover:underline text-sm font-medium transition-all"
@@ -297,7 +341,9 @@ const Dashboard = () => {
                           </span>
                         </div>
                       )}
-                      <h3 className="font-semibold text-gray-900 mb-2">{post.title}</h3>
+                      <h3 className="font-semibold text-gray-900 mb-2">
+                        {post.title}
+                      </h3>
                       <div className="flex justify-between items-center text-sm text-gray-500">
                         <span>{post.date}</span>
                         <div className="flex items-center gap-4">
@@ -358,8 +404,12 @@ const Dashboard = () => {
                       )}
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm text-gray-900">{activity.message}</p>
-                      <p className="text-xs text-gray-500 mt-1">{activity.time}</p>
+                      <p className="text-sm text-gray-900">
+                        {activity.message}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {activity.time}
+                      </p>
                     </div>
                   </div>
                 ))}

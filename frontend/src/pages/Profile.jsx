@@ -1,6 +1,16 @@
-import React, { useState } from "react";
-import { Mail, Calendar, Edit2, Save, X, Award, Target, TrendingUp } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import {
+  Mail,
+  Calendar,
+  Edit2,
+  Save,
+  X,
+  Award,
+  Target,
+  TrendingUp,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import api from "../features/auth/services/api";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -8,19 +18,48 @@ const Profile = () => {
   const [activeTab, setActiveTab] = useState("goals");
 
   // Mock data - 나중에 API에서 가져올 데이터
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await api.get("/api/users/me");
+        const data = res.data;
+
+        // backend(UserResponse) 정보를 state에 저장
+        setUserData({
+          userId: data.userId,
+          username: data.username,
+          email: data.email,
+          bio: data.bio,
+          joinDate: new Date(data.createdAt).toLocaleDateString(),
+          profileImage: data.profileImageUrl,
+          totalPoints: 0,
+          totalGoals: 0,
+          completedGoals: 0,
+        });
+      } catch (err) {
+        console.error("프로필 로딩 실패:", err);
+      }
+    };
+    fetchProfile();
+  }, []);
+
   const [userData, setUserData] = useState({
-    userId: "uuid-12345",
-    username: "JohnDoe",
-    email: "john.doe@example.com",
-    bio: "매일 성장하는 개발자입니다. 꾸준함이 제 무기에요!",
-    joinDate: "2024.01.15",
-    profileImage: "https://api.dicebear.com/7.x/avataaars/svg?seed=John",
-    totalPoints: 1240,
-    totalGoals: 12,
-    completedGoals: 8,
+    // userId: "uuid-12345",
+    // username: "JohnDoe",
+    // email: "john.doe@example.com",
+    // bio: "매일 성장하는 개발자입니다. 꾸준함이 제 무기에요!",
+    // joinDate: "2024.01.15",
+    // profileImage: "https://api.dicebear.com/7.x/avataaars/svg?seed=John",
+    // totalPoints: 1240,
+    // totalGoals: 12,
+    // completedGoals: 8,
   });
 
-  const [editedBio, setEditedBio] = useState(userData.bio);
+  const [editedBio, setEditedBio] = useState("");
+  useEffect(() => {
+    setEditedBio(userData.bio || "");
+  }, [userData]);
 
   const goals = [
     {
@@ -76,8 +115,10 @@ const Profile = () => {
 
   const handleSaveBio = async () => {
     // TODO: API 호출로 bio 업데이트
-    console.log("Bio 업데이트:", editedBio);
-    setUserData({ ...userData, bio: editedBio });
+    const res = await api.put(`/api/users/${userData.userId}`, {
+      bio: editedBio,
+    });
+    setUserData(res.data);
     setIsEditingBio(false);
   };
 
@@ -177,7 +218,9 @@ const Profile = () => {
                 <div className="flex justify-center mb-2">
                   <Award className="w-6 h-6 text-yellow-600" />
                 </div>
-                <p className="text-2xl font-bold text-gray-900">{userData.totalPoints}</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {userData.totalPoints}
+                </p>
                 <p className="text-sm text-gray-600">포인트</p>
               </div>
             </div>
@@ -227,7 +270,9 @@ const Profile = () => {
                       className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition cursor-pointer"
                     >
                       <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-semibold text-gray-900">{goal.title}</h3>
+                        <h3 className="font-semibold text-gray-900">
+                          {goal.title}
+                        </h3>
                         <span
                           className={`text-xs px-2 py-1 rounded ${
                             goal.status === "COMPLETED"
@@ -238,7 +283,9 @@ const Profile = () => {
                           {goal.status === "COMPLETED" ? "완료" : "진행중"}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-500 mb-2">{goal.period}</p>
+                      <p className="text-sm text-gray-500 mb-2">
+                        {goal.period}
+                      </p>
                       <div className="bg-gray-200 rounded-full h-2 overflow-hidden">
                         <div
                           className="bg-blue-600 h-full rounded-full"
@@ -262,7 +309,9 @@ const Profile = () => {
                       onClick={() => navigate(`/community/${post.id}`)}
                       className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition cursor-pointer"
                     >
-                      <h3 className="font-semibold text-gray-900 mb-2">{post.title}</h3>
+                      <h3 className="font-semibold text-gray-900 mb-2">
+                        {post.title}
+                      </h3>
                       <div className="flex justify-between text-sm text-gray-500">
                         <span>{post.date}</span>
                         <span>❤️ {post.likes}</span>
@@ -295,7 +344,9 @@ const Profile = () => {
           {/* Sidebar - Quick Actions */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">빠른 액션</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                빠른 액션
+              </h3>
               <div className="space-y-3">
                 <button
                   onClick={() => navigate("/goals/new")}

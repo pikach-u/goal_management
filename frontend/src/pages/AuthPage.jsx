@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Target, Github } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import useAuthStore from "../features/auth/store/authStore";
 
 const AuthPage = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -11,53 +12,25 @@ const AuthPage = () => {
     confirmPassword: "",
   });
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  // const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  const login = useAuthStore((state) => state.login);
+  const register = useAuthStore((state) => state.register);
+  const loading = useAuthStore((state) => state.loading);
+
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
-    setLoading(true);
-
     try {
-      // TODO: API 호출
-      // const response = await fetch('/api/auth/login', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ email: formData.email, password: formData.password })
-      // });
-      // const data = await response.json();
-      // if (response.ok) {
-      //   localStorage.setItem("accessToken", data.accessToken);
-      //   localStorage.setItem("refreshToken", data.refreshToken);
-      //   localStorage.setItem("user", JSON.stringify(data.user));
-      //   navigate("/dashboard");
-      // }
-
-      console.log("로그인 시도:", formData.email);
-
-      // 임시: 성공으로 간주하고 토큰 저장 후 대시보드로 이동
-      setTimeout(() => {
-        // 임시 토큰 저장
-        localStorage.setItem("accessToken", "temporary_token_" + Date.now());
-        localStorage.setItem("user", JSON.stringify({
-          email: formData.email,
-          username: "사용자"
-        }));
-        navigate("/dashboard");
-      }, 500);
+      await login({ email: formData.email, password: formData.password });
+      navigate("/dashboard");
     } catch (err) {
-      setError("로그인에 실패했습니다.");
-      console.error("로그인 에러:", err);
-    } finally {
-      setLoading(false);
+      setError(err.response?.data?.message || "로그인에 실패했습니다.");
     }
   };
 
@@ -70,44 +43,15 @@ const AuthPage = () => {
       return;
     }
 
-    setLoading(true);
-
     try {
-      // TODO: API 호출
-      // const response = await fetch('/api/auth/register', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({
-      //     username: formData.username,
-      //     email: formData.email,
-      //     password: formData.password
-      //   })
-      // });
-      // const data = await response.json();
-      // if (response.ok) {
-      //   localStorage.setItem("accessToken", data.accessToken);
-      //   localStorage.setItem("refreshToken", data.refreshToken);
-      //   localStorage.setItem("user", JSON.stringify(data.user));
-      //   navigate("/dashboard");
-      // }
-
-      console.log("회원가입 시도:", formData);
-
-      // 임시: 성공으로 간주하고 토큰 저장 후 대시보드로 이동
-      setTimeout(() => {
-        // 임시 토큰 저장
-        localStorage.setItem("accessToken", "temporary_token_" + Date.now());
-        localStorage.setItem("user", JSON.stringify({
-          email: formData.email,
-          username: formData.username
-        }));
-        navigate("/dashboard");
-      }, 500);
+      await register({
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+      });
+      navigate("/dashboard");
     } catch (err) {
-      setError("회원가입에 실패했습니다.");
-      console.error("회원가입 에러:", err);
-    } finally {
-      setLoading(false);
+      setError(err.response?.data?.message || "회원가입에 실패했습니다.");
     }
   };
 
@@ -129,7 +73,9 @@ const AuthPage = () => {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-full mb-4">
             <Target className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Goal Tracker</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Goal Tracker
+          </h1>
           <p className="text-gray-600">목표를 향한 여정을 시작하세요</p>
         </div>
 
