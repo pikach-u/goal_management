@@ -10,15 +10,14 @@ import CommunityDetail from "./pages/CommunityDetail";
 import CommunityWrite from "./pages/CommunityWrite";
 import PrivateRoute from "./components/PrivateRoute";
 import OAuth2Callback from "./pages/OAuth2Callback";
+import useAuthStore from "./features/auth/store/authStore";
 
 /**
  * URL 경로에 따라 어떤 페이지를 보여줄지 결정 (라우터 설정)
  */
 const App = () => {
-  // 로그인 상태 확인
-  const isAuthenticated = () => {
-    return localStorage.getItem("accessToken") !== null;
-  };
+  // 로그인 상태 확인 (authStore의 isAuthenticated로 확인)
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   return (
     <BrowserRouter>
@@ -27,7 +26,7 @@ const App = () => {
         <Route
           path="/"
           element={
-            isAuthenticated() ? (
+            isAuthenticated ? (
               <Navigate to="/dashboard" replace />
             ) : (
               <Navigate to="/auth" replace />

@@ -115,6 +115,7 @@ const Profile = () => {
 
   const handleSaveBio = async () => {
     // TODO: API 호출로 bio 업데이트
+    // 초기 렌더링 시 userData.userId가 undefined일 수 있음. 수정 필요
     const res = await api.put(`/api/users/${userData.userId}`, {
       bio: editedBio,
     });
