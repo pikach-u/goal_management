@@ -3,6 +3,7 @@ package com.team9.backend.community.controller;
 import com.team9.backend.community.dto.CommentRequest;
 import com.team9.backend.community.dto.CommentResponse;
 import com.team9.backend.community.dto.PostLikeResponse;
+import com.team9.backend.community.service.BoardService;
 import com.team9.backend.community.service.CommentService;
 import com.team9.backend.user.entity.User;
 import jakarta.validation.Valid;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 public class CommentController {
 
     private final CommentService commentService;
+    private final BoardService boardService;
 
     //등록
     @PostMapping
@@ -65,12 +67,12 @@ public class CommentController {
         return ResponseEntity.noContent().build();
     }
 
-    //좋아요
-    @PostMapping("/{postNo}/like")
-    public ResponseEntity<PostLikeResponse> toggleLike(@PathVariable Long postNo,
-                                                       @AuthenticationPrincipal User user) {
-        PostLikeResponse response = boardService.togglePostLike(postNo, user);
-        return ResponseEntity.ok(response);
-    }
+    //좋아요 // postNo 중복사용으로 인한 오류, 잠시 주석 처리 해두었습니다
+//    @PostMapping("/{postNo}/like")
+//    public ResponseEntity<PostLikeResponse> toggleLike(@PathVariable Long postNo,
+//                                                       @AuthenticationPrincipal User user) {
+//        PostLikeResponse response = boardService.togglePostLike(postNo, user);
+//        return ResponseEntity.ok(response);
+//    }
 }
 
