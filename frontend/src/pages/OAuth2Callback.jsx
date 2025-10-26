@@ -13,7 +13,7 @@ const OAuth2Callback = () => {
     const error = searchParams.get("error");
 
     if (error) {
-      navigate("/login");
+      navigate("/auth", { state: { error: "OAuth 로그인 실패" } });
       return;
     }
 
@@ -45,9 +45,11 @@ const OAuth2Callback = () => {
         navigate("/login");
       }
     } else {
-      navigate("/login");
+      navigate("/auth");
     }
-  }, [searchParams, navigate, setAuth]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // OAuth Callback 페이지 로드 될 때 한 번만 실행하기 위해 의존성 배열 비움, ESLint 경고 무시
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-400 via-sky-500 to-cyan-400">
