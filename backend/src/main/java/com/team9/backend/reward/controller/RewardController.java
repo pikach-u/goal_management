@@ -1,13 +1,13 @@
-package com.pikachu.goal.reward.controller;
+package com.team9.backend.reward.controller;
 
-import com.pikachu.goal.reward.dto.BalanceResponse;
-import com.pikachu.goal.reward.dto.GrantPointRequest;
-import com.pikachu.goal.reward.dto.ManualBadgeGrantRequest;
-import com.pikachu.goal.reward.dto.RewardHistoryItem;
-import com.pikachu.goal.reward.entity.BadgeType;
-import com.pikachu.goal.reward.service.BadgeService;
-import com.pikachu.goal.reward.service.PointsService;
-import com.pikachu.goal.reward.service.RewardService;
+import com.team9.backend.reward.dto.BalanceResponse;
+import com.team9.backend.reward.dto.GrantPointRequest;
+import com.team9.backend.reward.dto.ManualBadgeGrantRequest;
+import com.team9.backend.reward.dto.RewardHistoryItem;
+import com.team9.backend.reward.entity.BadgeType;
+import com.team9.backend.reward.service.BadgeService;
+import com.team9.backend.reward.service.PointService;
+import com.team9.backend.reward.service.RewardService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -19,13 +19,13 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RewardController {
 
-    private final PointsService pointsService;
+    private final PointService PointService;
     private final RewardService rewardService;
     private final BadgeService badgeService;
 
     @GetMapping("/points/{userId}")
     public BalanceResponse getPoints(@PathVariable Long userId) {
-        return pointsService.balance(userId);
+        return PointService.balance(userId);
     }
 
     @PostMapping("/points/{userId}")
@@ -47,7 +47,7 @@ public class RewardController {
 
     @GetMapping("/history/{userId}")
     public List<RewardHistoryItem> history(@PathVariable Long userId) {
-        return pointsService.history(userId);
+        return PointService.history(userId);
     }
 
     @GetMapping("/check/{userId}")

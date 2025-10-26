@@ -1,9 +1,9 @@
-package com.pikachu.goal.reward.service;
+package com.team9.backend.reward.service;
 
-import com.pikachu.goal.reward.entity.BadgeType;
-import com.pikachu.goal.reward.entity.UserBadge;
-import com.pikachu.goal.reward.repository.BadgeTypeRepository;
-import com.pikachu.goal.reward.repository.UserBadgeRepository;
+import com.team9.backend.reward.entity.BadgeType;
+import com.team9.backend.reward.entity.UserBadge;
+import com.team9.backend.reward.repository.BadgeTypeRepository;
+import com.team9.backend.reward.repository.UserBadgeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

@@ -1,12 +1,12 @@
-package com.pikachu.goal.reward.service;
+package com.team9.backend.reward.service;
 
-import com.pikachu.goal.reward.dto.BalanceResponse;
-import com.pikachu.goal.reward.dto.RewardHistoryItem;
-import com.pikachu.goal.reward.entity.PointsBalance;
-import com.pikachu.goal.reward.entity.PointTransaction;
-import com.pikachu.goal.reward.entity.RewardEnums.TransactionType;
-import com.pikachu.goal.reward.repository.PointBalanceRepository;
-import com.pikachu.goal.reward.repository.PointTransactionRepository;
+import com.team9.backend.reward.dto.BalanceResponse;
+import com.team9.backend.reward.dto.RewardHistoryItem;
+import com.team9.backend.reward.entity.PointsBalance;
+import com.team9.backend.reward.entity.PointTransaction;
+import com.team9.backend.reward.entity.RewardEnums.TransactionType;
+import com.team9.backend.reward.repository.PointBalanceRepository;
+import com.team9.backend.reward.repository.PointTransactionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service @RequiredArgsConstructor
-public class PointsService {
+public class PointService {
 
     private final PointBalanceRepository balanceRepo;
     private final PointTransactionRepository txRepo;
