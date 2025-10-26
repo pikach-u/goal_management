@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Data
 @Builder
 @AllArgsConstructor
@@ -17,6 +19,7 @@ public class UserResponse {
     private String bio;
 
     private String profileImageUrl;
+    private LocalDateTime createdAt;
 
     private String motivationType;
     private boolean goalVisibility;

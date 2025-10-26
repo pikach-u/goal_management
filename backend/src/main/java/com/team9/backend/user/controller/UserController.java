@@ -1,5 +1,6 @@
 package com.team9.backend.user.controller;
 
+import com.team9.backend.user.dto.UserRequest;
 import com.team9.backend.user.dto.UserResponse;
 import com.team9.backend.user.entity.User;
 import com.team9.backend.user.service.UserService;
@@ -35,14 +36,14 @@ public class UserController {
     }
 
     // 특정 유저 조회
-    @GetMapping("/{userid}")
+    @GetMapping("/{userId}")
     public ResponseEntity<UserResponse> getUserByUserId(@PathVariable String userId){
-        UserResponse user = userService.getUserProfile(userId);
+        UserResponse user = userService.getUserById(userId);
         return ResponseEntity.ok(user);
     }
 
 //    // 유저 정보 수정
-//    @PutMapping("/{userid}")
+//    @PutMapping("/{userId}")
 //    public ResponseEntity<UserResponse> updateProfile(
 //            @PathVariable String userId,
 //            @Valid @RequestBody UserRequest request,
@@ -51,12 +52,18 @@ public class UserController {
 //        return ResponseEntity.ok(response);
 //    }
 
-//    // 특정 유저의 작성글 보기
-//    @GetMapping("/{userid}/posts")
+//    // 특정 유저의 작성글 보기 - 구현 해야 됨
+//    @GetMapping("/{userId}/posts")
 //    public ResponseEntity<Page<PostResponse>> getUserPosts(@PathVariable String userId){
 //        PostResponse response = postService.getUserPosts(userId);
 //        return ResponseEntity.ok(response);
 //    }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserResponse> getUserProfile(@AuthenticationPrincipal UserDetails userDetails){
+        UserResponse user = userService.getUserByUsername(userDetails.getUsername());
+        return ResponseEntity.ok(user);
+    }
 
 //    // 검색
 //    @GetMapping("?keyword=\"username\"")

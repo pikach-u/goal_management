@@ -9,6 +9,7 @@ import CommunityList from "./pages/CommunityList";
 import CommunityDetail from "./pages/CommunityDetail";
 import CommunityWrite from "./pages/CommunityWrite";
 import PrivateRoute from "./components/PrivateRoute";
+import OAuth2Callback from "./pages/OAuth2Callback";
 
 /**
  * URL 경로에 따라 어떤 페이지를 보여줄지 결정 (라우터 설정)
@@ -38,6 +39,9 @@ const App = () => {
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/login" element={<Navigate to="/auth" replace />} />
         <Route path="/register" element={<Navigate to="/auth" replace />} />
+
+        {/* OAuth2 콜백 처리 */}
+        <Route path="/oauth2/callback" element={<OAuth2Callback />} />
 
         {/* 대시보드 - 골 진척도 확인 (인증 필요) */}
         <Route

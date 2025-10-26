@@ -1,10 +1,12 @@
 package com.team9.backend.user.service;
 
 import com.team9.backend.global.exception.ResourceNotFoundException;
+import com.team9.backend.user.dto.UserRequest;
 import com.team9.backend.user.dto.UserResponse;
 import com.team9.backend.user.dto.UserUpdateResponse;
 import com.team9.backend.user.entity.User;
 import com.team9.backend.user.repository.UserRepository;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -33,7 +35,7 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public UserResponse getUserProfile(String username){
+    public UserResponse getUserByUsername(String username){
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with username: " + username));
         return toUserResponse(user);
@@ -82,4 +84,5 @@ public class UserService {
                 .bio(user.getBio())
                 .build();
     }
+
 }
