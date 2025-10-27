@@ -14,6 +14,7 @@ const GoalDetail = () => {
   const {
     currentGoal,
     fetchGoal,
+    fetchGoals,
     updateGoal,
     deleteGoal,
     loading,
@@ -66,12 +67,13 @@ const GoalDetail = () => {
       const start = new Date(currentGoal.startDate);
       const end = new Date(currentGoal.endDate);
       const today = new Date();
-      const totalDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+      // 시작일과 종료일을 포함한 전체 일수 계산
+      const totalDays = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
       const elapsedDays = Math.max(
-        0,
+        1,
         Math.min(
           totalDays,
-          Math.ceil((today - start) / (1000 * 60 * 60 * 24))
+          Math.ceil((today - start) / (1000 * 60 * 60 * 24)) + 1
         )
       );
 
@@ -211,6 +213,9 @@ const GoalDetail = () => {
         completed: completedCount,
         progress: Math.round((completedCount / goal.total) * 100),
       });
+
+      // Zustand 스토어 업데이트 - 대시보드에 변경사항 반영
+      await fetchGoals();
 
       alert("오늘의 목표를 달성했습니다! 🎉");
     } catch (err) {

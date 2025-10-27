@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { Target, TrendingUp, Award, LogOut, Heart } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import api from "../services/api";
 import useGoalStore from "../features/goal/store/goalStore";
 import usePostStore from "../features/community/store/postStore";
+import achievementService from "../features/goal/service/achievement";
 import { formatPeriod } from "../utils/dateUtils";
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("goals");
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Zustand store에서 goals 가져오기
   const { goals, fetchGoals, loading: goalsLoading } = useGoalStore();
@@ -23,6 +25,9 @@ const Dashboard = () => {
     points: 0,
   });
 
+  // 각 목표의 달성 기록을 저장 (goalId -> achievement count)
+  const [achievementCounts, setAchievementCounts] = useState({});
+
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -35,12 +40,11 @@ const Dashboard = () => {
         // 내 게시글 조회
         await fetchMyPosts({ page: 0, size: 5 });
 
-        setUserData({
+        setUserData(prev => ({
+          ...prev,
           username: res.data.username,
-          totalGoals: res.data.totalGoals || 0,
-          completedGoals: res.data.completedGoals || 0,
           points: res.data.totalPoints || 0,
-        });
+        }));
       } catch (err) {
         console.error(err);
       }
@@ -48,11 +52,24 @@ const Dashboard = () => {
     loadData();
   }, [fetchGoals, fetchMyPosts]);
 
+  // 페이지 재방문 시 목표 데이터 리프레시
+  useEffect(() => {
+    fetchGoals();
+  }, [location.key, fetchGoals]);
+
   // 실제 goals 데이터를 기반으로 통계 계산
   useEffect(() => {
-    if (goals && goals.length > 0) {
+    if (goals && Object.keys(achievementCounts).length > 0) {
       const totalGoals = goals.length;
-      const completedGoals = goals.filter(g => g.status === "완료" || g.status === "COMPLETED").length;
+
+      // 100% 달성한 목표를 완료로 카운트
+      const completedGoals = goals.filter(goal => {
+        const totalDays = Math.floor(
+          (new Date(goal.endDate) - new Date(goal.startDate)) / (1000 * 60 * 60 * 24)
+        ) + 1;
+        const achievedDays = achievementCounts[goal.goalId] || 0;
+        return achievedDays >= totalDays;
+      }).length;
 
       setUserData(prev => ({
         ...prev,
@@ -60,6 +77,29 @@ const Dashboard = () => {
         completedGoals,
       }));
     }
+  }, [goals, achievementCounts]);
+
+  // 각 목표의 달성 기록 개수 불러오기
+  useEffect(() => {
+    const loadAchievementCounts = async () => {
+      if (!goals || goals.length === 0) return;
+
+      const counts = {};
+      await Promise.all(
+        goals.map(async (goal) => {
+          try {
+            const achievements = await achievementService.getAchievements(goal.goalId);
+            counts[goal.goalId] = achievements.length;
+          } catch (err) {
+            console.error(`목표 ${goal.goalId}의 달성 기록 조회 실패:`, err);
+            counts[goal.goalId] = 0;
+          }
+        })
+      );
+      setAchievementCounts(counts);
+    };
+
+    loadAchievementCounts();
   }, [goals]);
 
   // 날짜 포맷 함수
@@ -109,21 +149,22 @@ const Dashboard = () => {
     },
   ];
 
-  // 전체 진행률 계산 (목표가 있을 때만)
+  // 전체 진행률 계산 (실제 달성 기록 기반)
   const calculateProgress = (goal) => {
     if (!goal.startDate || !goal.endDate) return 0;
 
     const start = new Date(goal.startDate);
     const end = new Date(goal.endDate);
-    const today = new Date();
 
-    const totalDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
-    const elapsedDays = Math.ceil((today - start) / (1000 * 60 * 60 * 24));
+    // 시작일과 종료일을 포함한 전체 일수 계산
+    const totalDays = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
 
-    if (elapsedDays <= 0) return 0;
-    if (elapsedDays >= totalDays) return 100;
+    // 실제 달성 기록 개수로 진행률 계산
+    const achievedDays = achievementCounts[goal.goalId] || 0;
 
-    return Math.round((elapsedDays / totalDays) * 100);
+    if (totalDays <= 0) return 0;
+
+    return Math.round((achievedDays / totalDays) * 100);
   };
 
   const overallProgress = goals.length > 0
@@ -295,16 +336,12 @@ const Dashboard = () => {
                     <div className="space-y-4">
                       {goals.map((goal) => {
                         const progress = calculateProgress(goal);
-                        const totalDays = Math.ceil(
+                        // 시작일과 종료일을 포함한 전체 일수 계산
+                        const totalDays = Math.floor(
                           (new Date(goal.endDate) - new Date(goal.startDate)) / (1000 * 60 * 60 * 24)
-                        );
-                        const elapsedDays = Math.max(
-                          0,
-                          Math.min(
-                            totalDays,
-                            Math.ceil((new Date() - new Date(goal.startDate)) / (1000 * 60 * 60 * 24))
-                          )
-                        );
+                        ) + 1;
+                        // 실제 달성한 일수
+                        const achievedDays = achievementCounts[goal.goalId] || 0;
 
                         return (
                           <div
@@ -334,7 +371,7 @@ const Dashboard = () => {
                             </div>
                             <div className="flex justify-between items-center text-sm">
                               <span className="text-gray-600">
-                                {elapsedDays}/{totalDays}일 경과
+                                {achievedDays}/{totalDays}일 달성
                               </span>
                               <div className="flex items-center gap-3">
                                 <span className="text-blue-600 font-medium">
