@@ -1,13 +1,21 @@
 import React, { useState, useEffect } from "react";
-import { Target, TrendingUp, Award, LogOut } from "lucide-react";
+import { Target, TrendingUp, Award, LogOut, Heart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import api from "../features/auth/services/api";
+import api from "../services/api";
+import useGoalStore from "../features/goal/store/goalStore";
+import usePostStore from "../features/community/store/postStore";
+import { formatPeriod } from "../utils/dateUtils";
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("goals");
   const navigate = useNavigate();
 
-  // Mock data - 나중에 API에서 가져올 데이터
+  // Zustand store에서 goals 가져오기
+  const { goals, fetchGoals, loading: goalsLoading } = useGoalStore();
+
+  // Zustand store에서 posts 가져오기
+  const { posts, fetchMyPosts, loading: postsLoading } = usePostStore();
+
   const [userData, setUserData] = useState({
     username: "",
     totalGoals: 0,
@@ -16,9 +24,17 @@ const Dashboard = () => {
   });
 
   useEffect(() => {
-    const loadUserData = async () => {
+    const loadData = async () => {
       try {
+        // 사용자 정보 조회
         const res = await api.get("/api/users/me");
+
+        // 목표 데이터 조회
+        await fetchGoals();
+
+        // 내 게시글 조회
+        await fetchMyPosts({ page: 0, size: 5 });
+
         setUserData({
           username: res.data.username,
           totalGoals: res.data.totalGoals || 0,
@@ -29,65 +45,41 @@ const Dashboard = () => {
         console.error(err);
       }
     };
-    loadUserData();
-  }, []);
+    loadData();
+  }, [fetchGoals, fetchMyPosts]);
 
-  const goals = [
-    {
-      id: 1,
-      title: "매일 운동하기",
-      period: "2024.10 - 2024.12",
-      progress: 75,
-      completed: 45,
-      total: 60,
-    },
-    {
-      id: 2,
-      title: "React 마스터하기",
-      period: "2024.09 - 2024.11",
-      progress: 60,
-      completed: 18,
-      total: 30,
-    },
-    {
-      id: 3,
-      title: "책 10권 읽기",
-      period: "2024.10 - 2024.12",
-      progress: 40,
-      completed: 4,
-      total: 10,
-    },
-  ];
+  // 실제 goals 데이터를 기반으로 통계 계산
+  useEffect(() => {
+    if (goals && goals.length > 0) {
+      const totalGoals = goals.length;
+      const completedGoals = goals.filter(g => g.status === "완료" || g.status === "COMPLETED").length;
 
-  const posts = [
-    {
-      id: 1,
-      title: "오늘도 운동 완료!",
-      date: "2024.10.24",
-      likes: 24,
-      comments: 8,
-      goalId: 1,
-      goalTitle: "매일 운동하기",
-    },
-    {
-      id: 2,
-      title: "React Hooks 정리 완료",
-      date: "2024.10.23",
-      likes: 18,
-      comments: 5,
-      goalId: 2,
-      goalTitle: "React 마스터하기",
-    },
-    {
-      id: 3,
-      title: "아침 루틴 만들기 성공",
-      date: "2024.10.22",
-      likes: 32,
-      comments: 12,
-      goalId: 1,
-      goalTitle: "매일 운동하기",
-    },
-  ];
+      setUserData(prev => ({
+        ...prev,
+        totalGoals,
+        completedGoals,
+      }));
+    }
+  }, [goals]);
+
+  // 날짜 포맷 함수
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "";
+    const date = new Date(dateStr);
+    return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}`;
+  };
+
+  // 좋아요 토글
+  const handleLike = async (e, postNo) => {
+    e.stopPropagation(); // 카드 클릭 이벤트 방지
+    e.preventDefault(); // 기본 동작 방지
+    try {
+      await usePostStore.getState().toggleLike(postNo);
+    } catch (err) {
+      console.error("좋아요 실패:", err);
+      alert("좋아요 처리에 실패했습니다.");
+    }
+  };
 
   const badges = [
     { id: 1, name: "이달의 성실왕", icon: "👑", date: "2024.10" },
@@ -117,9 +109,26 @@ const Dashboard = () => {
     },
   ];
 
-  const overallProgress = Math.round(
-    goals.reduce((acc, goal) => acc + goal.progress, 0) / goals.length
-  );
+  // 전체 진행률 계산 (목표가 있을 때만)
+  const calculateProgress = (goal) => {
+    if (!goal.startDate || !goal.endDate) return 0;
+
+    const start = new Date(goal.startDate);
+    const end = new Date(goal.endDate);
+    const today = new Date();
+
+    const totalDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+    const elapsedDays = Math.ceil((today - start) / (1000 * 60 * 60 * 24));
+
+    if (elapsedDays <= 0) return 0;
+    if (elapsedDays >= totalDays) return 100;
+
+    return Math.round((elapsedDays / totalDays) * 100);
+  };
+
+  const overallProgress = goals.length > 0
+    ? Math.round(goals.reduce((acc, goal) => acc + calculateProgress(goal), 0) / goals.length)
+    : 0;
 
   // 로그아웃 처리
   const handleLogout = () => {
@@ -268,47 +277,82 @@ const Dashboard = () => {
                     진행 중인 목표
                   </h2>
 
-                  <div className="space-y-4">
-                    {goals.map((goal) => (
-                      <div
-                        key={goal.id}
-                        className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition"
+                  {goalsLoading ? (
+                    <div className="text-center py-8 text-gray-500">
+                      목표를 불러오는 중...
+                    </div>
+                  ) : goals.length === 0 ? (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500 mb-4">아직 목표가 없습니다.</p>
+                      <button
+                        onClick={() => navigate("/goals/new")}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
                       >
-                        <div className="flex justify-between items-start mb-2">
-                          <h3 className="font-semibold text-gray-900">
-                            {goal.title}
-                          </h3>
-                          <span className="text-sm text-gray-500">
-                            {goal.period}
-                          </span>
-                        </div>
-                        <div className="mb-2">
-                          <div className="bg-gray-200 rounded-full h-2 overflow-hidden">
-                            <div
-                              className="bg-blue-600 h-full rounded-full transition-all"
-                              style={{ width: `${goal.progress}%` }}
-                            ></div>
+                        첫 목표 만들기
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {goals.map((goal) => {
+                        const progress = calculateProgress(goal);
+                        const totalDays = Math.ceil(
+                          (new Date(goal.endDate) - new Date(goal.startDate)) / (1000 * 60 * 60 * 24)
+                        );
+                        const elapsedDays = Math.max(
+                          0,
+                          Math.min(
+                            totalDays,
+                            Math.ceil((new Date() - new Date(goal.startDate)) / (1000 * 60 * 60 * 24))
+                          )
+                        );
+
+                        return (
+                          <div
+                            key={goal.goalId}
+                            className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition"
+                          >
+                            <div className="flex justify-between items-start mb-2">
+                              <div className="flex-1">
+                                <h3 className="font-semibold text-gray-900">
+                                  {goal.goalName}
+                                </h3>
+                                <span className="text-xs text-gray-500 mt-1 inline-block">
+                                  {goal.status}
+                                </span>
+                              </div>
+                              <span className="text-sm text-gray-500">
+                                {formatPeriod(goal.startDate, goal.endDate)}
+                              </span>
+                            </div>
+                            <div className="mb-2">
+                              <div className="bg-gray-200 rounded-full h-2 overflow-hidden">
+                                <div
+                                  className="bg-blue-600 h-full rounded-full transition-all"
+                                  style={{ width: `${progress}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                            <div className="flex justify-between items-center text-sm">
+                              <span className="text-gray-600">
+                                {elapsedDays}/{totalDays}일 경과
+                              </span>
+                              <div className="flex items-center gap-3">
+                                <span className="text-blue-600 font-medium">
+                                  {progress}%
+                                </span>
+                                <button
+                                  onClick={() => navigate(`/goals/${goal.goalId}`)}
+                                  className="text-gray-600 hover:text-gray-900 hover:underline text-sm font-medium transition-all"
+                                >
+                                  자세히 보기 →
+                                </button>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex justify-between items-center text-sm">
-                          <span className="text-gray-600">
-                            {goal.completed}/{goal.total}일 완료
-                          </span>
-                          <div className="flex items-center gap-3">
-                            <span className="text-blue-600 font-medium">
-                              {goal.progress}%
-                            </span>
-                            <button
-                              onClick={() => navigate(`/goals/${goal.id}`)}
-                              className="text-gray-600 hover:text-gray-900 hover:underline text-sm font-medium transition-all"
-                            >
-                              자세히 보기 →
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -327,33 +371,64 @@ const Dashboard = () => {
                     커뮤니티 둘러보기 →
                   </button>
                 </div>
-                <div className="space-y-4">
-                  {posts.map((post) => (
-                    <div
-                      key={post.id}
-                      onClick={() => navigate(`/community/${post.id}`)}
-                      className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition cursor-pointer"
+
+                {postsLoading ? (
+                  <div className="text-center py-8 text-gray-500">
+                    게시글을 불러오는 중...
+                  </div>
+                ) : posts.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500 mb-4">작성한 글이 없습니다.</p>
+                    <button
+                      onClick={() => navigate("/community/new")}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
                     >
-                      {post.goalTitle && (
-                        <div className="mb-2">
-                          <span className="inline-block px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded">
-                            🎯 {post.goalTitle}
-                          </span>
-                        </div>
-                      )}
-                      <h3 className="font-semibold text-gray-900 mb-2">
-                        {post.title}
-                      </h3>
-                      <div className="flex justify-between items-center text-sm text-gray-500">
-                        <span>{post.date}</span>
-                        <div className="flex items-center gap-4">
-                          <span>❤️ {post.likes}</span>
-                          <span>💬 {post.comments}</span>
+                      첫 글 작성하기
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {posts.map((post) => (
+                      <div
+                        key={post.postNo}
+                        onClick={() => navigate(`/community/${post.postNo}`)}
+                        className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition cursor-pointer"
+                      >
+                        {post.goalTitle && (
+                          <div className="mb-2">
+                            <span className="inline-block px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded">
+                              🎯 {post.goalTitle}
+                            </span>
+                          </div>
+                        )}
+                        <h3 className="font-semibold text-gray-900 mb-2">
+                          {post.postTitle}
+                        </h3>
+                        <div className="flex justify-between items-center text-sm text-gray-500">
+                          <span>{formatDate(post.createDate)}</span>
+                          <div className="flex items-center gap-4">
+                            <button
+                              onClick={(e) => handleLike(e, post.postNo)}
+                              className={`flex items-center gap-1 hover:scale-110 transition-all duration-200 ${
+                                post.isLikedByCurrentUser
+                                  ? "text-red-500 font-semibold"
+                                  : "hover:text-red-500"
+                              }`}
+                            >
+                              <Heart
+                                className={`w-4 h-4 ${
+                                  post.isLikedByCurrentUser ? "fill-current" : ""
+                                }`}
+                              />
+                              {post.likeCount}
+                            </button>
+                            <span>💬 {post.commentCount}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 

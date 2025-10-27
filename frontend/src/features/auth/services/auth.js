@@ -1,5 +1,5 @@
-import api from "./api";
-import StorageService from "./storage";
+import api from "../../../services/api";
+import StorageService from "../../../services/storage";
 
 export const authService = {
   login: async (userData) => {

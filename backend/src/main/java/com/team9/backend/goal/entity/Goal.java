@@ -1,5 +1,8 @@
 package com.team9.backend.goal.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.team9.backend.achievement.entity.Achievement;
+import com.team9.backend.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -7,6 +10,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -21,9 +26,10 @@ public class Goal {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long goalId;
 
-//  @ManyToOne(fetch = FetchType.LAZY)
-//  @JoinColumn(name = "user_id", nullable = false)
-//  private User user;
+  @JsonIgnore
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "user_id", nullable = false)
+  private User user;
 
   @Column(name = "goal_name", nullable = false)
   private String goalName;
@@ -39,6 +45,10 @@ public class Goal {
 
   @Column(nullable = false)
   private String status;
+
+  @JsonIgnore
+  @OneToMany(mappedBy = "goal", cascade = CascadeType.ALL, orphanRemoval = true)
+  private List<Achievement> achievements = new ArrayList<>();
 
   @CreationTimestamp
   @Column(name = "created_at", updatable = false)

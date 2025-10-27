@@ -1,7 +1,9 @@
 package com.team9.backend.user.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.team9.backend.auth.entity.AuthProvider;
 import com.team9.backend.community.entity.Post;
+import com.team9.backend.goal.entity.Goal;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -36,6 +38,7 @@ public class User implements UserDetails {
     @Column(unique = true, nullable = false)
     private String username;
 
+    @JsonIgnore
     @Column(nullable = false)
     private String password;
 
@@ -67,10 +70,11 @@ public class User implements UserDetails {
     @Column(name = "profile_image_url", columnDefinition = "TEXT")
     private String profileImageUrl;
 
+    @JsonIgnore
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    private List<Goal> goals = new ArrayList<>();
 
-//    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
-//    private List<Goal> goals = new ArrayList<>();
-//
+    @JsonIgnore
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<Post> posts = new ArrayList<>();
 

@@ -1,64 +1,136 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Edit2, Trash2, Save, X, ArrowLeft, CheckCircle } from "lucide-react";
+import useGoalStore from "../features/goal/store/goalStore";
+import achievementService from "../features/goal/service/achievement";
+import { getLocalDateString, getDatesInRange } from "../utils/dateUtils";
 
 const GoalDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
 
-  // Mock data - 나중에 API에서 가져올 데이터
-  const [goal, setGoal] = useState({
-    id: id,
-    title: "매일 운동하기",
-    period: "2025.10 - 2025.12",
-    startDate: "2025-10-01",
-    endDate: "2025-12-31",
-    progress: 75,
-    completed: 18,
-    total: 92,
-    description:
-      "건강한 삶을 위해 매일 30분씩 운동하기. 주 5회 이상 달성을 목표로 합니다. 꾸준함이 가장 중요하며, 포기하지 않고 지속하는 것이 목표입니다.",
-    status: "IN_PROGRESS",
-  });
+  // Zustand store에서 goal 관련 함수 가져오기
+  const {
+    currentGoal,
+    fetchGoal,
+    updateGoal,
+    deleteGoal,
+    loading,
+    error,
+  } = useGoalStore();
+
+  const [goal, setGoal] = useState(null);
+  const [originalGoal, setOriginalGoal] = useState(null); // 수정 취소용
 
   // 달성 기록 - 날짜별로 완료 여부 저장 (YYYY-MM-DD 형식)
-  const [achievements, setAchievements] = useState({
-    "2025-10-01": true,
-    "2025-10-02": true,
-    "2025-10-03": true,
-    "2025-10-05": true,
-    "2025-10-06": true,
-    "2025-10-08": true,
-    "2025-10-09": true,
-    "2025-10-10": true,
-    "2025-10-12": true,
-    "2025-10-13": true,
-    "2025-10-15": true,
-    "2025-10-16": true,
-    "2025-10-17": true,
-    "2025-10-19": true,
-    "2025-10-20": true,
-    "2025-10-21": true,
-    "2025-10-22": true,
-    "2025-10-23": true,
-    // 오늘 (2025-10-24)은 아직 미완료 - 완료 가능 상태
-  });
+  const [achievements, setAchievements] = useState({});
+  const [achievementsLoading, setAchievementsLoading] = useState(false);
 
-  // 오늘 날짜 (YYYY-MM-DD 형식)
-  const today = new Date().toISOString().split("T")[0];
+  // 오늘 날짜 (YYYY-MM-DD 형식) - useMemo로 메모이제이션하여 안정적인 값 보장
+  const today = useMemo(() => {
+    return getLocalDateString();
+  }, []);
 
-  // 목표 기간의 모든 날짜 생성
-  const getDatesInRange = (startDate, endDate) => {
-    const dates = [];
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+  // 컴포넌트 마운트 시 목표 데이터 조회
+  useEffect(() => {
+    const loadGoal = async () => {
+      try {
+        await fetchGoal(id);
+      } catch (err) {
+        console.error("목표 조회 실패:", err);
+        alert("목표를 불러오는데 실패했습니다.");
+        navigate("/dashboard");
+      }
+    };
+    loadGoal();
+  }, [id, fetchGoal, navigate]);
 
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      dates.push(new Date(d).toISOString().split("T")[0]);
+  // currentGoal이 로드되면 goal state에 설정 및 achievements 로드
+  useEffect(() => {
+    if (currentGoal) {
+      const formattedGoal = {
+        id: currentGoal.goalId,
+        title: currentGoal.goalName,
+        description: currentGoal.goalContent,
+        startDate: currentGoal.startDate,
+        endDate: currentGoal.endDate,
+        status: currentGoal.status,
+        // 진행률 계산
+        progress: 0,
+        completed: 0,
+        total: 0,
+      };
+
+      // 기간 계산
+      const start = new Date(currentGoal.startDate);
+      const end = new Date(currentGoal.endDate);
+      const today = new Date();
+      const totalDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+      const elapsedDays = Math.max(
+        0,
+        Math.min(
+          totalDays,
+          Math.ceil((today - start) / (1000 * 60 * 60 * 24))
+        )
+      );
+
+      formattedGoal.total = totalDays;
+      formattedGoal.completed = elapsedDays;
+      formattedGoal.progress = totalDays > 0 ? Math.round((elapsedDays / totalDays) * 100) : 0;
+
+      // 날짜 포맷 (YYYY.MM - YYYY.MM)
+      const formatDate = (dateStr) => {
+        const d = new Date(dateStr);
+        return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}`;
+      };
+      formattedGoal.period = `${formatDate(currentGoal.startDate)} - ${formatDate(currentGoal.endDate)}`;
+
+      setGoal(formattedGoal);
+      setOriginalGoal(formattedGoal); // 원본 저장
+
+      // 달성 기록 로드
+      loadAchievements(currentGoal.goalId);
     }
-    return dates;
+  }, [currentGoal]);
+
+  // 달성 기록 로드 함수
+  const loadAchievements = async (goalId) => {
+    setAchievementsLoading(true);
+    try {
+      const achievementsList = await achievementService.getAchievements(goalId);
+
+      // 배열을 객체로 변환 { "YYYY-MM-DD": true }
+      const achievementsMap = {};
+      achievementsList.forEach((achievement) => {
+        achievementsMap[achievement.achievedDate] = true;
+      });
+
+      setAchievements(achievementsMap);
+
+      // 달성 기록 개수로 completed 업데이트
+      setGoal(prev => ({
+        ...prev,
+        completed: achievementsList.length,
+        progress: prev.total > 0 ? Math.round((achievementsList.length / prev.total) * 100) : 0,
+      }));
+    } catch (err) {
+      console.error("달성 기록 로드 실패:", err);
+    } finally {
+      setAchievementsLoading(false);
+    }
   };
+
+  // 로딩 중일 때
+  if (loading || !goal) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-lg text-gray-600">목표를 불러오는 중...</p>
+        </div>
+      </div>
+    );
+  }
 
   const allDates = getDatesInRange(goal.startDate, goal.endDate);
 
@@ -67,21 +139,41 @@ const GoalDetail = () => {
   };
 
   const handleSave = async () => {
-    // TODO: API 호출로 목표 업데이트
-    console.log("목표 업데이트:", goal);
-    setIsEditing(false);
+    try {
+      // API 호출로 목표 업데이트 (백엔드 필드명에 맞게 매핑)
+      const goalData = {
+        goalName: goal.title,
+        goalContent: goal.description,
+        startDate: goal.startDate,
+        endDate: goal.endDate,
+        status: goal.status,
+      };
+
+      await updateGoal(id, goalData);
+      setOriginalGoal(goal); // 업데이트 성공 시 원본도 갱신
+      setIsEditing(false);
+      alert("목표가 수정되었습니다.");
+    } catch (err) {
+      console.error("목표 수정 실패:", err);
+      alert("목표 수정에 실패했습니다.");
+    }
   };
 
   const handleCancel = () => {
     setIsEditing(false);
-    // TODO: 원래 데이터로 복원
+    setGoal(originalGoal); // 원래 데이터로 복원
   };
 
   const handleDelete = async () => {
     if (window.confirm("정말 삭제하시겠습니까?")) {
-      // TODO: API 호출로 목표 삭제
-      console.log("목표 삭제:", id);
-      navigate("/dashboard");
+      try {
+        await deleteGoal(id);
+        alert("목표가 삭제되었습니다.");
+        navigate("/dashboard");
+      } catch (err) {
+        console.error("목표 삭제 실패:", err);
+        alert("목표 삭제에 실패했습니다.");
+      }
     }
   };
 
@@ -94,52 +186,52 @@ const GoalDetail = () => {
   };
 
   // 오늘 목표 달성 처리
-  const handleTodayAchievement = () => {
+  const handleTodayAchievement = async () => {
     if (achievements[today]) {
       alert("오늘은 이미 달성했습니다!");
       return;
     }
 
-    // TODO: API 호출로 달성 기록 저장
-    setAchievements({
-      ...achievements,
-      [today]: true,
-    });
+    try {
+      // API 호출로 달성 기록 저장
+      await achievementService.createAchievement(id, today);
 
-    // 완료 일수 업데이트
-    const completedCount = Object.keys(achievements).filter(
-      (date) => achievements[date]
-    ).length + 1;
+      // 로컬 상태 업데이트
+      const newAchievements = {
+        ...achievements,
+        [today]: true,
+      };
+      setAchievements(newAchievements);
 
-    setGoal({
-      ...goal,
-      completed: completedCount,
-      progress: Math.round((completedCount / goal.total) * 100),
-    });
+      // 완료 일수 업데이트
+      const completedCount = Object.keys(newAchievements).length;
 
-    alert("오늘의 목표를 달성했습니다! 🎉");
+      setGoal({
+        ...goal,
+        completed: completedCount,
+        progress: Math.round((completedCount / goal.total) * 100),
+      });
+
+      alert("오늘의 목표를 달성했습니다! 🎉");
+    } catch (err) {
+      console.error("달성 기록 저장 실패:", err);
+      alert(err.response?.data?.message || "달성 기록 저장에 실패했습니다.");
+    }
   };
 
-  // 오늘 달성 가능 여부 확인
+  // 오늘 달성 가능 여부 확인 (문자열 비교로 타임존 문제 방지)
   const canAchieveToday = () => {
-    const todayDate = new Date(today);
-    const startDate = new Date(goal.startDate);
-    const endDate = new Date(goal.endDate);
-
     // 목표 기간 내이고, 아직 달성하지 않았으면 가능
-    return todayDate >= startDate && todayDate <= endDate && !achievements[today];
+    return today >= goal.startDate && today <= goal.endDate && !achievements[today];
   };
 
-  // 날짜의 상태 확인 (completed, today, future)
+  // 날짜의 상태 확인 (completed, today, future) - 문자열 비교
   const getDateStatus = (date) => {
-    const dateObj = new Date(date);
-    const todayObj = new Date(today);
-
     if (achievements[date]) {
       return "completed"; // 완료됨
     } else if (date === today) {
       return "today"; // 오늘 (완료 가능)
-    } else if (dateObj > todayObj) {
+    } else if (date > today) {
       return "future"; // 미래
     } else {
       return "missed"; // 놓침
@@ -151,7 +243,7 @@ const GoalDetail = () => {
       <div className="max-w-4xl mx-auto p-6">
         {/* Back Button */}
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate("/dashboard")}
           className="mb-6 text-gray-600 hover:text-blue-600 flex items-center gap-2 transition"
         >
           <ArrowLeft className="w-4 h-4" />

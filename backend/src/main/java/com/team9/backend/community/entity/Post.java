@@ -1,5 +1,7 @@
 package com.team9.backend.community.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.team9.backend.goal.entity.Goal;
 import com.team9.backend.user.entity.User; // User 임포트
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -43,6 +45,10 @@ public class Post {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id")
     private User user;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "goal_id")
+    private Goal goal;
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> comments = new ArrayList<>();

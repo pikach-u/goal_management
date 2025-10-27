@@ -1,6 +1,7 @@
 package com.team9.backend.community.controller;
 
 import com.team9.backend.community.dto.PostDetailResponse;
+import com.team9.backend.community.dto.PostLikeResponse;
 import com.team9.backend.community.dto.PostRequest;
 import com.team9.backend.community.dto.PostSimpleResponse;
 import com.team9.backend.community.entity.Post;
@@ -41,13 +42,28 @@ public class BoardController {
     @GetMapping
     public Page<PostSimpleResponse> getAllPosts(
             @RequestParam(name = "keyword", required = false) String keyword,
+            @AuthenticationPrincipal User user,
             Pageable pageable){
 
         if(keyword != null && !keyword.trim().isEmpty()){
-            return boardService.searchPost(keyword,pageable);
+            return boardService.searchPost(keyword, user, pageable);
         }else{
-            return boardService.findAllPosts(pageable);
+            return boardService.findAllPosts(user, pageable);
         }
+    }
+
+    //현재 사용자의 게시글 조회
+    @GetMapping("/my")
+    public ResponseEntity<Page<PostSimpleResponse>> getMyPosts(
+            @AuthenticationPrincipal User user,
+            Pageable pageable) {
+
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        Page<PostSimpleResponse> myPosts = boardService.findMyPosts(user, pageable);
+        return ResponseEntity.ok(myPosts);
     }
 
     //게시물 상세
@@ -85,6 +101,20 @@ public class BoardController {
 
         boardService.deletePost(postNo, user);
         return ResponseEntity.noContent().build();
+    }
+
+    //좋아요 토글
+    @PostMapping("/{postNo}/like")
+    public ResponseEntity<PostLikeResponse> toggleLike(
+            @PathVariable Long postNo,
+            @AuthenticationPrincipal User user) {
+
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        PostLikeResponse response = boardService.togglePostLike(postNo, user);
+        return ResponseEntity.ok(response);
     }
 
 }

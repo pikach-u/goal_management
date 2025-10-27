@@ -10,7 +10,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import api from "../features/auth/services/api";
+import api from "../services/api";
 
 const Profile = () => {
   const navigate = useNavigate();

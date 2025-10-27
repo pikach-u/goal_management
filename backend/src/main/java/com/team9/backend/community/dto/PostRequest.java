@@ -15,4 +15,7 @@ public class PostRequest {
 
     @NotBlank(message = "내용을 입력해주세요")
     private String postContent;
+
+    // 목표와 연동 (선택사항)
+    private Long goalId;
 }

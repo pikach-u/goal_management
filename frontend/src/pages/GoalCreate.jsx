@@ -1,9 +1,13 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Save, Home } from "lucide-react";
+import useGoalStore from "../features/goal/store/goalStore";
+import { getLocalDateString } from "../utils/dateUtils";
 
 const GoalCreate = () => {
   const navigate = useNavigate();
+  const { createGoal, loading: storeLoading, error: storeError } = useGoalStore();
+
   const [formData, setFormData] = useState({
     title: "",
     content: "",
@@ -50,28 +54,21 @@ const GoalCreate = () => {
     setLoading(true);
 
     try {
-      // TODO: API 호출
-      // const response = await fetch('/api/goals', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //     'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-      //   },
-      //   body: JSON.stringify(formData)
-      // });
-      // const data = await response.json();
-      // if (response.ok) {
-      //   navigate(`/goals/${data.goalId}`);
-      // }
+      // API 호출 (백엔드 필드명에 맞게 매핑)
+      const goalData = {
+        goalName: formData.title,
+        goalContent: formData.content,
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        status: "진행중", // 기본 상태
+      };
 
-      console.log("목표 생성:", formData);
+      const newGoal = await createGoal(goalData);
 
-      // 임시: 성공으로 간주하고 대시보드로 이동
-      setTimeout(() => {
-        navigate("/dashboard");
-      }, 500);
+      // 성공 시 목표 상세 페이지로 이동
+      navigate(`/goals/${newGoal.goalId}`);
     } catch (err) {
-      setError("목표 생성에 실패했습니다.");
+      setError(err.response?.data?.message || "목표 생성에 실패했습니다.");
       console.error("생성 에러:", err);
     } finally {
       setLoading(false);
@@ -93,8 +90,19 @@ const GoalCreate = () => {
     }
   };
 
-  // 오늘 날짜 (최소 시작일)
-  const today = new Date().toISOString().split("T")[0];
+  // 오늘 날짜 (최소 시작일) - 로컬 시간대 기준
+  const today = getLocalDateString();
+
+  // 디버깅: 오늘 날짜 확인
+  console.log("Today's date (GoalCreate):", today);
+  console.log("Current Date object:", new Date());
+  console.log("Current Date components:", {
+    year: new Date().getFullYear(),
+    month: new Date().getMonth() + 1,
+    date: new Date().getDate(),
+    hours: new Date().getHours(),
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">

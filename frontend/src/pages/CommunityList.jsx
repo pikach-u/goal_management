@@ -1,100 +1,68 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Plus, TrendingUp, Clock, Heart, Home } from "lucide-react";
+import usePostStore from "../features/community/store/postStore";
 
 const CommunityList = () => {
   const navigate = useNavigate();
   const [searchKeyword, setSearchKeyword] = useState("");
-  const [sortBy, setSortBy] = useState("latest"); // latest, popular, trending
+  const [currentPage, setCurrentPage] = useState(0);
 
-  // Mock data - 나중에 API에서 가져올 데이터
-  const posts = [
-    {
-      id: 1,
-      title: "오늘도 운동 완료!",
-      content:
-        "아침 6시에 일어나서 조깅 30분 완료! 날씨가 좋아서 기분이 너무 좋았어요.",
-      author: "JohnDoe",
-      authorImage: "https://api.dicebear.com/7.x/avataaars/svg?seed=John",
-      date: "2024.10.24",
-      views: 142,
-      likes: 24,
-      comments: 8,
-      goalId: 1,
-      goalTitle: "매일 운동하기",
-    },
-    {
-      id: 2,
-      title: "React Hooks 정리 완료",
-      content:
-        "useState, useEffect, useContext, useReducer 등 주요 Hooks를 정리했습니다.",
-      author: "Alice",
-      authorImage: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alice",
-      date: "2024.10.23",
-      views: 256,
-      likes: 45,
-      comments: 12,
-      goalId: 2,
-      goalTitle: "React 마스터하기",
-    },
-    {
-      id: 3,
-      title: "아침 루틴 만들기 성공",
-      content:
-        "일주일 동안 매일 아침 6시에 일어나기 성공! 아침 시간을 활용하니 하루가 훨씬 알차게 느껴집니다.",
-      author: "Bob",
-      authorImage: "https://api.dicebear.com/7.x/avataaars/svg?seed=Bob",
-      date: "2024.10.22",
-      views: 189,
-      likes: 32,
-      comments: 15,
-      goalId: 1,
-      goalTitle: "매일 운동하기",
-    },
-    {
-      id: 4,
-      title: "독서 노트 - 데일 카네기",
-      content:
-        "인간관계론을 읽고 정리했습니다. 사람들과의 관계에서 정말 중요한 인사이트를 많이 얻었어요.",
-      author: "Charlie",
-      authorImage: "https://api.dicebear.com/7.x/avataaars/svg?seed=Charlie",
-      date: "2024.10.21",
-      views: 98,
-      likes: 18,
-      comments: 5,
-      goalId: 3,
-      goalTitle: "책 10권 읽기",
-    },
-    {
-      id: 5,
-      title: "코딩테스트 준비 1주차 회고",
-      content:
-        "알고리즘 문제를 매일 2개씩 풀기 시작했습니다. 처음엔 어려웠지만 점점 재미있어지네요.",
-      author: "Emma",
-      authorImage: "https://api.dicebear.com/7.x/avataaars/svg?seed=Emma",
-      date: "2024.10.20",
-      views: 324,
-      likes: 56,
-      comments: 20,
-      goalId: 2,
-      goalTitle: "React 마스터하기",
-    },
-  ];
+  const { posts, pagination, loading, error, fetchPosts } = usePostStore();
 
-  const filteredPosts = posts.filter(
-    (post) =>
-      post.title.toLowerCase().includes(searchKeyword.toLowerCase()) ||
-      post.content.toLowerCase().includes(searchKeyword.toLowerCase())
-  );
+  // 컴포넌트 마운트 시 게시글 조회
+  useEffect(() => {
+    loadPosts();
+  }, [currentPage]);
 
-  const sortedPosts = [...filteredPosts].sort((a, b) => {
-    if (sortBy === "popular") {
-      return b.likes - a.likes;
-    } else if (sortBy === "trending") {
-      return b.views - a.views;
+  const loadPosts = async () => {
+    try {
+      await fetchPosts({
+        page: currentPage,
+        size: 10,
+      });
+    } catch (err) {
+      console.error("게시글 목록 조회 실패:", err);
     }
-    return 0; // latest는 이미 정렬되어 있다고 가정
-  });
+  };
+
+  const handleSearch = async () => {
+    try {
+      await fetchPosts({
+        keyword: searchKeyword,
+        page: 0,
+        size: 10,
+      });
+      setCurrentPage(0);
+    } catch (err) {
+      console.error("검색 실패:", err);
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
+  };
+
+  // 좋아요 토글
+  const handleLike = async (e, postNo) => {
+    e.stopPropagation(); // 카드 클릭 이벤트 방지
+    e.preventDefault(); // 기본 동작 방지
+    try {
+      await usePostStore.getState().toggleLike(postNo);
+    } catch (err) {
+      console.error("좋아요 실패:", err);
+      alert("좋아요 처리에 실패했습니다.");
+    }
+  };
+
+  // 날짜 포맷 (LocalDateTime을 사용자 친화적으로)
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "";
+    const date = new Date(dateStr);
+    return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}`;
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -126,109 +94,102 @@ const CommunityList = () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Main Content */}
           <div className="lg:col-span-3">
-            {/* Search and Filter */}
+            {/* Search */}
             <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
               <div className="flex gap-4">
                 <div className="flex-1 relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="검색어를 입력하세요"
+                    placeholder="검색어를 입력하세요 (Enter로 검색)"
                     value={searchKeyword}
                     onChange={(e) => setSearchKeyword(e.target.value)}
+                    onKeyPress={handleKeyPress}
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setSortBy("latest")}
-                    className={`px-4 py-2 rounded-lg transition flex items-center gap-2 ${
-                      sortBy === "latest"
-                        ? "bg-blue-100 text-blue-700"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
-                  >
-                    <Clock className="w-4 h-4" />
-                    최신순
-                  </button>
-                  <button
-                    onClick={() => setSortBy("popular")}
-                    className={`px-4 py-2 rounded-lg transition flex items-center gap-2 ${
-                      sortBy === "popular"
-                        ? "bg-blue-100 text-blue-700"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
-                  >
-                    <Heart className="w-4 h-4" />
-                    인기순
-                  </button>
-                  <button
-                    onClick={() => setSortBy("trending")}
-                    className={`px-4 py-2 rounded-lg transition flex items-center gap-2 ${
-                      sortBy === "trending"
-                        ? "bg-blue-100 text-blue-700"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
-                  >
-                    <TrendingUp className="w-4 h-4" />
-                    조회순
-                  </button>
-                </div>
+                <button
+                  onClick={handleSearch}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                >
+                  검색
+                </button>
               </div>
             </div>
 
+            {/* Error Message */}
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+                {error}
+              </div>
+            )}
+
+            {/* Loading */}
+            {loading && (
+              <div className="text-center py-12">
+                <p className="text-gray-600">게시글을 불러오는 중...</p>
+              </div>
+            )}
+
             {/* Posts List */}
-            <div className="space-y-4">
-              {sortedPosts.map((post) => (
-                <div
-                  key={post.id}
-                  onClick={() => navigate(`/community/${post.id}`)}
-                  className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition cursor-pointer"
-                >
-                  <div className="flex gap-4">
-                    <img
-                      src={post.authorImage}
-                      alt={post.author}
-                      className="w-12 h-12 rounded-full"
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="font-semibold text-gray-900">
-                          {post.author}
-                        </span>
-                        <span className="text-sm text-gray-500">·</span>
-                        <span className="text-sm text-gray-500">{post.date}</span>
-                      </div>
-                      {post.goalTitle && (
-                        <div className="mb-2">
-                          <span className="inline-block px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded">
-                            🎯 {post.goalTitle}
+            {!loading && (
+              <div className="space-y-4">
+                {posts.map((post) => (
+                  <div
+                    key={post.postNo}
+                    onClick={() => navigate(`/community/${post.postNo}`)}
+                    className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition cursor-pointer"
+                  >
+                    <div className="flex gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="font-semibold text-gray-900">
+                            {post.userNickname}
+                          </span>
+                          <span className="text-sm text-gray-500">·</span>
+                          <span className="text-sm text-gray-500">
+                            {formatDate(post.createDate)}
                           </span>
                         </div>
-                      )}
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                        {post.title}
-                      </h3>
-                      <p className="text-gray-700 mb-4 line-clamp-2">
-                        {post.content}
-                      </p>
-                      <div className="flex items-center gap-4 text-sm text-gray-500">
-                        <span className="flex items-center gap-1">
-                          <Heart className="w-4 h-4" />
-                          {post.likes}
-                        </span>
-                        <span>댓글 {post.comments}</span>
-                        <span>조회 {post.views}</span>
+                        {post.goalTitle && (
+                          <div className="mb-2">
+                            <span className="inline-block px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded">
+                              🎯 {post.goalTitle}
+                            </span>
+                          </div>
+                        )}
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                          {post.postTitle}
+                        </h3>
+                        <div className="flex items-center gap-4 text-sm text-gray-500">
+                          <button
+                            onClick={(e) => handleLike(e, post.postNo)}
+                            className={`flex items-center gap-1 hover:scale-110 transition-all duration-200 ${
+                              post.isLikedByCurrentUser
+                                ? "text-red-500 font-semibold"
+                                : "hover:text-red-500"
+                            }`}
+                          >
+                            <Heart
+                              className={`w-4 h-4 ${
+                                post.isLikedByCurrentUser ? "fill-current" : ""
+                              }`}
+                            />
+                            {post.likeCount}
+                          </button>
+                          <span>댓글 {post.commentCount}</span>
+                          <span>조회 {post.viewCount}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
 
-            {sortedPosts.length === 0 && (
+            {!loading && posts.length === 0 && (
               <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-                <p className="text-gray-500">검색 결과가 없습니다.</p>
+                <p className="text-gray-500">게시글이 없습니다.</p>
               </div>
             )}
           </div>

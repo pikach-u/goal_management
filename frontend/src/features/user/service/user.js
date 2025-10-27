@@ -1,4 +1,4 @@
-import api from "../../auth/services/api";
+import api from "../../../services/api";
 
 const userService = {
   getUserProfile: async (userId) => {

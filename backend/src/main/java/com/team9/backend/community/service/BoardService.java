@@ -9,6 +9,8 @@ import com.team9.backend.community.entity.PostLike;
 import com.team9.backend.community.exception.PostNotFoundException; // PostNotFoundException이 필요합니다.
 import com.team9.backend.community.repository.BoardRepository;
 import com.team9.backend.community.repository.PostLikeRepository;
+import com.team9.backend.goal.entity.Goal;
+import com.team9.backend.goal.repository.GoalRepository;
 import com.team9.backend.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -27,6 +29,7 @@ public class BoardService {
 
     private final BoardRepository boardRepository;
     private final PostLikeRepository postLikeRepository;
+    private final GoalRepository goalRepository;
 
     //등록
     @Transactional
@@ -36,13 +39,42 @@ public class BoardService {
         }
 
         Post post = new Post(requestDto.getPostTitle(), requestDto.getPostContent(), user);
+
+        // Goal 연동 처리 (선택사항)
+        if (requestDto.getGoalId() != null) {
+            Goal goal = goalRepository.findById(requestDto.getGoalId())
+                    .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 목표입니다. ID: " + requestDto.getGoalId()));
+
+            // 해당 Goal이 현재 사용자의 것인지 확인
+            if (!goal.getUser().getUserId().equals(user.getUserId())) {
+                throw new IllegalArgumentException("다른 사용자의 목표는 선택할 수 없습니다.");
+            }
+
+            post.setGoal(goal);
+        }
+
         return boardRepository.save(post);
     }
 
     //목록
-    public Page<PostSimpleResponse> findAllPosts(Pageable pageable) {
+    public Page<PostSimpleResponse> findAllPosts(User user, Pageable pageable) {
         Page<Post> postPage = boardRepository.findAllByPostDeleteDateIsNullOrderByPostCreateDateDesc(pageable);
-        return postPage.map(PostSimpleResponse::new);
+        return postPage.map(post -> {
+            boolean isLiked = user != null && postLikeRepository.existsByUserAndPost(user, post);
+            return new PostSimpleResponse(post, isLiked);
+        });
+    }
+
+    //현재 사용자의 게시글 목록
+    public Page<PostSimpleResponse> findMyPosts(User user, Pageable pageable) {
+        if (user == null) {
+            throw new IllegalArgumentException("로그인이 필요한 기능입니다.");
+        }
+        Page<Post> postPage = boardRepository.findByUserAndPostDeleteDateIsNullOrderByPostCreateDateDesc(user, pageable);
+        return postPage.map(post -> {
+            boolean isLiked = postLikeRepository.existsByUserAndPost(user, post);
+            return new PostSimpleResponse(post, isLiked);
+        });
     }
 
     //상세 조회
@@ -66,6 +98,23 @@ public class BoardService {
         validatePostAuthor(post, user);
         post.setPostTitle(requestDto.getPostTitle());
         post.setPostContent(requestDto.getPostContent());
+
+        // Goal 연동 수정 처리
+        if (requestDto.getGoalId() != null) {
+            Goal goal = goalRepository.findById(requestDto.getGoalId())
+                    .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 목표입니다. ID: " + requestDto.getGoalId()));
+
+            // 해당 Goal이 현재 사용자의 것인지 확인
+            if (!goal.getUser().getUserId().equals(user.getUserId())) {
+                throw new IllegalArgumentException("다른 사용자의 목표는 선택할 수 없습니다.");
+            }
+
+            post.setGoal(goal);
+        } else {
+            // goalId가 null이면 연결 해제
+            post.setGoal(null);
+        }
+
         return post;
     }
 
@@ -78,12 +127,15 @@ public class BoardService {
     }
 
     //검색
-    public Page<PostSimpleResponse> searchPost(String keyword, Pageable pageable) {
+    public Page<PostSimpleResponse> searchPost(String keyword, User user, Pageable pageable) {
         Page<Post> postPage = boardRepository
                 .findByPostDeleteDateIsNullAndPostTitleContainingOrPostContentContainingOrderByPostCreateDateDesc
                         (keyword, keyword, pageable);
 
-        return postPage.map(PostSimpleResponse::new);
+        return postPage.map(post -> {
+            boolean isLiked = user != null && postLikeRepository.existsByUserAndPost(user, post);
+            return new PostSimpleResponse(post, isLiked);
+        });
     }
 
     //좋아요
